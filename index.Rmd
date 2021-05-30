@@ -1,0 +1,845 @@
+---
+title: "Contact-induced changes in colexification patterns"
+author: "Alexey Koshevoy"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+  # html_document:
+  #   df_print: paged
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ape)
+library(igraph)
+library(ggraph)
+library(rstatix)
+library(ggpubr)
+library(sjPlot)
+library(lme4)
+library(patchwork)
+library(ggrepel)
+library(xtable)
+library(car)
+library(ggpubr)
+library(ggtree)
+library(tidyr)
+
+set_theme(theme_bw())
+```
+
+## Gradient boosting feature importance
+
+```{r}
+read.csv('combined_importance.csv') %>%
+  ggplot(aes(x=reorder(Variable, Importance, FUN = median), y=Importance))+
+  facet_grid('Set')+
+  geom_jitter(size=1, alpha=0.5)+
+  geom_boxplot(outlier.shape = NA, fill=NA, aes(color=Variable))+
+  theme_bw()+
+  xlab('Feature')+
+  theme(legend.position = "none")+
+  coord_flip()+
+  scale_colour_brewer(palette = "Set1")+
+  ggsave('figs/GBR_feature_importance.pdf',width = 10, height = 4)
+```
+
+
+
+## Graph plotting
+
+
+```{r}
+distance <- read.csv('new_km_dist.csv', row.names="X")
+distance[distance <= 1000] = 1
+distance[distance > 1000] = 0
+adj_matrix <- data.matrix(distance)
+
+colex_dist <- read.csv('new_dist_m.csv', row.names="X")
+w_adj_matrix <- data.matrix(colex_dist)
+
+coords <- read.csv('coords_full.csv')
+
+g_t <- graph.adjacency(w_adj_matrix*adj_matrix, mode = "undirected", diag = FALSE, weighted = TRUE) 
+
+g_t <- set.vertex.attribute(g_t, "x", value=coords$Longitude) 
+g_t <- set.vertex.attribute(g_t, "y", value=coords$Latitude) 
+g_t <- set.vertex.attribute(g_t, "family", value=as.character(coords$Family))
+g_t <- set.vertex.attribute(g_t, "subfamily", value=as.character(coords$Subfamily))
+g_t <- set.vertex.attribute(g_t, "name", value=as.character(coords$Name_y))
+
+Isolated <-  which(degree(g_t)==0)
+g_t_u <-  delete.vertices(g_t, Isolated)
+```
+
+
+```{r}
+ggraph(g_t_u, layout = 'kk')+
+  geom_node_point(aes(color=family), size=1)+
+  geom_edge_arc(alpha=0.1, strength=0.1)+
+  coord_fixed()+
+  theme_void()+
+  theme(legend.position="bottom")+
+  theme(legend.key.size = unit(0.1, 'cm'))
+```
+
+```{r}
+ggraph(g_t_u, x=x, y=y)+
+  borders("world", colour="gray50", fill=alpha("gray50", 1))+
+  coord_sf(xlim = c(-20, 173), ylim=c(5, 80), expand = FALSE)+
+  theme_void()+
+  # geom_edge_link(aes(color = weight), alpha=1, width=1)+
+  geom_edge_link(alpha=1, width=0.5)+
+  # scale_edge_color_continuous(low = "blue", high = "red", name='WMCD')+
+  geom_node_point(size=2, alpha=1, aes(color=family))+
+  theme(legend.position = "none")+
+  ggsave('figs/graph_map.pdf',width = 10, height = 4)
+```
+
+
+```{r}
+ggraph(g_t_u, x=x, y=y)+
+  borders("world", colour="gray50", fill=alpha("gray50", 1))+
+  coord_sf(xlim = c(-20, 173), ylim=c(5, 80), expand = FALSE)+
+  theme_void()+
+  geom_edge_link(aes(color = weight), alpha=1, width=1)+
+  scale_edge_color_continuous(low = "blue", high = "red", name='WMCD')+
+  geom_node_point(size=2, alpha=0.5)+
+  theme(legend.position = "right")+
+  ggsave('figs/WMCD_map.pdf',width = 10, height = 4)
+```
+ 
+```{r}
+clp <- cluster_leading_eigen(g_t_u, weights = E(g_t_u)$weight)
+V(g_t_u)$community <- clp$membership
+
+random_w = sample(E(g_t_u)$weight, length(E(g_t_u)$weight), replace=T)
+
+clp_f <- cluster_leading_eigen(g_t_u, weights = random_w)
+V(g_t_u)$fake_community <- clp_f$membership
+```
+ 
+```{r}
+ggplot()+
+  geom_histogram(aes(random_w), fill='red', bins=30)+
+  geom_histogram(aes(E(g_t_u)$weight), fill='blue', alpha=0.5, bins=30)
+```
+
+ 
+```{r}
+p1 <- ggraph(g_t_u, x=x, y=y)+
+  borders("world", colour="gray50", fill=alpha("gray50", 1))+
+  coord_sf(xlim = c(-54, 173), ylim=c(5, 80), expand = FALSE)+
+  theme_void()+
+  geom_edge_link(alpha=0.5, width=1)+
+  geom_node_point(aes(color=factor(community)), size=1)+
+  theme(legend.position = "none")
+
+p2 <- ggraph(g_t_u, x=x, y=y)+
+  borders("world", colour="gray50", fill=alpha("gray50", 1))+
+  coord_sf(xlim = c(-54, 173), ylim=c(5, 80), expand = FALSE)+
+  theme_void()+
+  geom_edge_link(alpha=0.5, width=1)+
+  geom_node_point(aes(color=family), size=1)+
+  theme(legend.position = "none")
+
+p3 <- ggraph(g_t_u, x=x, y=y)+
+  borders("world", colour="gray50", fill=alpha("gray50", 1))+
+  coord_sf(xlim = c(-54, 173), ylim=c(5, 80), expand = FALSE)+
+  theme_void()+
+  geom_edge_link(alpha=0.5, width=1)+
+  geom_node_point(aes(color=factor(fake_community)), size=1)+
+  theme(legend.position = "none")
+
+p1 + p2 + p3 +
+  plot_annotation(tag_levels = 'A')+
+  ggsave('figs/clutster_map.pdf',width = 10, height = 4)
+```
+
+
+```{r}
+g_t <- graph.adjacency(w_adj_matrix*adj_matrix, mode = "undirected", diag = FALSE, weighted = TRUE) 
+g_t <- set.vertex.attribute(g_t, "x", value=coords$Longitude) 
+g_t <- set.vertex.attribute(g_t, "y", value=coords$Latitude) 
+g_t <- set.vertex.attribute(g_t, "family", value=as.character(coords$Family))
+g_t <- set.vertex.attribute(g_t, "subfamily", value=as.character(coords$Subfamily))
+g_t <- set.vertex.attribute(g_t, "name", value=as.character(coords$Name_y))
+Isolated <-  which(degree(g_t)==0)
+g_t_u <-  delete.vertices(g_t, Isolated)
+
+res <- betweenness(g_t_u, v=V(g_t_u), normalized = T, weights=1/E(g_t_u)$weight)
+res_d <- data.frame(res)
+res_d$lang <- rownames(res_d)
+res_d$family <- as.character(V(g_t_u)$family)
+# res_d$res <- res_d$res / deg$degree.g_t.
+
+p1 <- ggplot(data=top_n(res_d, 30, res), aes(y=reorder(lang, -res), x=res))+
+  geom_bar(stat="identity", aes(fill=family))+
+  theme_bw()+
+  theme(axis.title.y=element_blank())+
+  labs(x='Betweenness centrality ', fill='Family')+
+  guides(color = guide_legend(override.aes = list(size = 0.2)))+
+  theme(legend.position=c(1,1),legend.justification=c(1,1),
+        legend.direction="vertical",
+        legend.box="horizontal",
+        legend.box.just = c("top"), 
+        legend.background = element_rect(fill=alpha('transparent', 0),
+                                         color=alpha('transparent', 0)),
+        legend.key.size = unit(0.4, 'cm'), 
+        axis.text=element_text(size=10))
+
+g_t <- graph.adjacency(w_adj_matrix, mode = "undirected", diag = FALSE, weighted = TRUE)
+g_t <- set.vertex.attribute(g_t, "x", value=coords$Longitude)
+g_t <- set.vertex.attribute(g_t, "y", value=coords$Latitude)
+g_t <- set.vertex.attribute(g_t, "family", value=as.character(coords$Family))
+g_t <- set.vertex.attribute(g_t, "subfamily", value=as.character(coords$Subfamily))
+g_t <- set.vertex.attribute(g_t, "name", value=as.character(coords$Name_y))
+g_t_u <- g_t
+
+res <- betweenness(g_t_u, v=V(g_t_u), normalized = T, weights=1/E(g_t_u)$weight)
+res_d <- data.frame(res)
+res_d$lang <- rownames(res_d)
+res_d$family <- as.character(V(g_t_u)$family)
+# res_d$res <- res_d$res / deg$degree.g_t.
+
+p2 <- ggplot(data=top_n(res_d, 30, res), aes(y=reorder(lang, -res), x=res))+
+  geom_bar(stat="identity", aes(fill=family))+
+  theme_bw()+
+  theme(axis.title.y=element_blank())+
+  labs(x='Betweenness centrality ', fill='Family')+
+  guides(color = guide_legend(override.aes = list(size = 0.2)))+
+  theme(legend.position=c(1,1),legend.justification=c(1,1),
+        legend.direction="vertical",
+        legend.box="horizontal",
+        legend.box.just = c("top"), 
+        legend.background = element_rect(fill=alpha('transparent', 0),
+                                         color=alpha('transparent', 0)),
+        legend.key.size = unit(0.4, 'cm'), 
+        axis.text=element_text(size=10))
+
+p1 + p2+
+  plot_annotation(tag_levels = 'A')+
+  ggsave('figs/bc_WMCD.pdf',width = 10, height = 4)
+```
+
+
+
+```{r}
+g_t <- graph.adjacency(w_adj_matrix*adj_matrix, mode = "undirected", diag = FALSE, weighted = TRUE) 
+g_t <- set.vertex.attribute(g_t, "x", value=coords$Longitude) 
+g_t <- set.vertex.attribute(g_t, "y", value=coords$Latitude) 
+g_t <- set.vertex.attribute(g_t, "family", value=as.character(coords$Family))
+g_t <- set.vertex.attribute(g_t, "subfamily", value=as.character(coords$Subfamily))
+g_t <- set.vertex.attribute(g_t, "name", value=as.character(coords$Name_y))
+Isolated <-  which(degree(g_t)==0)
+g_t_u <-  delete.vertices(g_t, Isolated)
+
+res <- strength(g_t_u, v=V(g_t_u), loops = T, weights=E(g_t_u)$weight)
+res_d <- data.frame(res)
+res_d$lang <- rownames(res_d)
+res_d$family <- as.character(V(g_t_u)$family)
+
+p1 <- ggplot(data=top_n(res_d, 30, res), aes(y=reorder(lang, -res), x=res))+
+  geom_bar(stat="identity", aes(fill=family))+
+  theme_bw()+
+  theme(axis.title.y=element_blank())+
+  labs(x='Strength', fill='Family')+
+  guides(color = guide_legend(override.aes = list(size = 0.2)))+
+  scale_colour_brewer(palette = "Set1")+
+  theme(legend.position=c(1,1),legend.justification=c(1,1),
+        legend.direction="vertical",
+        legend.box="horizontal",
+        legend.box.just = c("top"), 
+        legend.background = element_rect(fill=alpha('transparent', 0),
+                                         color=alpha('transparent', 0)),
+        legend.key.size = unit(0.4, 'cm'), 
+        axis.text=element_text(size=10))
+
+g_t <- graph.adjacency(w_adj_matrix, mode = "undirected", diag = FALSE, weighted = TRUE)
+g_t <- set.vertex.attribute(g_t, "x", value=coords$Longitude)
+g_t <- set.vertex.attribute(g_t, "y", value=coords$Latitude)
+g_t <- set.vertex.attribute(g_t, "family", value=as.character(coords$Family))
+g_t <- set.vertex.attribute(g_t, "subfamily", value=as.character(coords$Subfamily))
+g_t <- set.vertex.attribute(g_t, "name", value=as.character(coords$Name_y))
+g_t_u <- g_t
+
+res <- strength(g_t_u, v=V(g_t_u), loops = T, weights=E(g_t_u)$weight)
+res_d <- data.frame(res)
+res_d$lang <- rownames(res_d)
+res_d$family <- as.character(V(g_t_u)$family)
+
+p2 <- ggplot(data=top_n(res_d, 30, res), aes(y=reorder(lang, -res), x=res))+
+  geom_bar(stat="identity", aes(fill=family))+
+  theme_bw()+
+  theme(axis.title.y=element_blank())+
+  labs(x='Strength', fill='Family')+
+  guides(color = guide_legend(override.aes = list(size = 0.2)))+
+  scale_colour_brewer(palette = "Set1")+
+  theme(legend.position=c(1,1),legend.justification=c(1,1),
+        legend.direction="vertical",
+        legend.box="horizontal",
+        legend.box.just = c("top"), 
+        legend.background = element_rect(fill=alpha('transparent', 0),
+                                         color=alpha('transparent', 0)),
+        legend.key.size = unit(0.4, 'cm'), 
+        axis.text=element_text(size=10))
+
+p1 + p2+
+  plot_annotation(tag_levels = 'A')+
+  ggsave('figs/strength_WMCD.pdf',width = 10, height = 4)
+```
+
+```{r}
+g_t <- graph.adjacency(w_adj_matrix*adj_matrix, mode = "undirected", diag = FALSE, weighted = TRUE) 
+g_t <- set.vertex.attribute(g_t, "x", value=coords$Longitude) 
+g_t <- set.vertex.attribute(g_t, "y", value=coords$Latitude) 
+g_t <- set.vertex.attribute(g_t, "family", value=as.character(coords$Family))
+g_t <- set.vertex.attribute(g_t, "subfamily", value=as.character(coords$Subfamily))
+g_t <- set.vertex.attribute(g_t, "name", value=as.character(coords$Name_y))
+Isolated <-  which(degree(g_t)==0)
+g_t_u <-  delete.vertices(g_t, Isolated)
+g_t_u <- set.vertex.attribute(g_t_u, "strength", value=strength(g_t_u, v=V(g_t_u), loops = T, weights=E(g_t_u)$weight))
+
+ggraph(g_t_u, x=x, y=y)+
+  borders("world", colour="gray50", fill=alpha("gray50", 1))+
+  coord_sf(xlim = c(-20, 173), ylim=c(5, 80), expand = FALSE)+
+  theme_void()+
+  geom_edge_link(alpha=1, width=1, color='blue', alpha=0.5)+
+  geom_node_point(aes(size=strength, color=family), alpha=1)+
+  theme(legend.position="bottom")+
+  theme(legend.key.size = unit(0.1, 'cm'))+
+  labs(color='')
+```
+
+## Indro-European neighbour net
+
+
+```{r}
+nel <- read.csv('nel.csv')
+```
+
+```{r}
+i_e_dist <- read.csv('WMCD_IE_lgs.csv', row.names="X")
+i_e_matrix <- as.dist(i_e_dist)
+
+five_nj <- ape::nj((1-i_e_matrix))
+five_nj$edge.length <- log(five_nj$edge.length*(1/min(five_nj$edge.length)))
+
+fam_d <- nel[nel$Name_y %in% five_nj$tip.label,] %>%
+  group_by(Name_y) %>%
+  summarise(Subfamily=Subfamily) %>%
+  unique()
+
+five_nj_fam <- treeio::rename_taxa(five_nj, fam_d, Name_y, Subfamily)
+
+ggtree(five_nj_fam, ladderize = T, size=0.5, continuous = TRUE)+
+  geom_tiplab(data=five_nj, aes(label=label))+
+  geom_tippoint(aes(color=label), size=3, alpha=.75)+
+  theme(legend.position = 'bottom')+
+  ggplot2::xlim(0, 22)+
+  labs(color='Subfamily')+
+  scale_colour_brewer(palette = "Set1")+
+  ggsave('WMCD_ie_phylo.pdf', dpi=300, width = 7, height = 7)
+```
+
+
+```{r}
+i_e_dist <- read.csv('new_dist_m.csv', row.names="X")
+i_e_matrix <- as.dist(i_e_dist)
+
+five_nj <- ape::nj((1-i_e_matrix))
+five_nj$edge.length <- log(five_nj$edge.length*(1/min(five_nj$edge.length)))
+
+fam_d <- nel[nel$Name_y %in% five_nj$tip.label,] %>%
+  group_by(Name_y) %>%
+  summarise(Subfamily=Family) %>%
+  unique()
+
+five_nj_fam <- treeio::rename_taxa(five_nj, fam_d, Name_y, Subfamily)
+
+ggtree(five_nj_fam, ladderize = T, size=0.5, continuous = TRUE)+
+  geom_tiplab(data=five_nj, aes(label=label))+
+  geom_tippoint(aes(color=label), size=3, alpha=.75)+
+  theme(legend.position = 'bottom')+
+  ggplot2::xlim(0, 35)+
+  labs(color='Family')+
+  ggsave('WMCD_compl_philo.pdf', dpi=300, width = 10, height = 10)
+```
+
+
+```{r}
+i_e_dist <- read.csv('WMCD_IE_lgs.csv', row.names="X")
+five_nj <- ape::nj((1-i_e_matrix))
+five_nj <- treeio::rename_taxa(five_nj, fam_d, Name_y, Subfamily)
+
+# trees <- list()
+# for (i in 1:10000){
+#   tree <- ape::nj((1-as.dist(sample(i_e_dist, replace = TRUE))))
+#   tree_f <- treeio::rename_taxa(tree, fam_d, Name_y, Subfamily)
+#   # tree$edge.length <- log(tree$edge.length*(1/min(tree$edge.length)))
+#   trees[[i]] <- tree_f
+# }
+
+# comb <- combn(1:200, 2)
+# dist_sim <- c()
+# for (i in 1:ncol(comb)) {
+#   dist_sim <- c(dist_sim, phangorn::wRF.dist(trees[[comb[,i][1]]], trees[[comb[,i][2]]], check.labels = TRUE, normalize = F))
+# }
+
+# dist_real <- c()
+# trees <- list()
+# trees_i <- list()
+# 
+# for (i in 1:1000){
+#   tree <- ape::nj((1-as.dist(sample(i_e_dist, replace = TRUE))))
+#   trees_i[[i]] <- tree
+#   tree_f <- treeio::rename_taxa(tree, fam_d, Name_y, Subfamily)
+#   trees[[i]] <- tree_f
+#   dist_real <- c(dist_real, phangorn::wRF.dist(five_nj, tree_f, check.labels = TRUE, normalize = F))
+# }
+```
+
+```{r}
+# ggplot(data_frame(val = dist_real), aes(val))+ 
+#   geom_histogram(bins=50)
+```
+
+
+```{r}
+# best_tree <- trees[[tail(order(dist_real), n=1)]]
+# best_tree_l <- trees_i[[tail(order(dist_real), n=1)]]
+# best_tree$edge.length <- log(best_tree$edge.length*(1/min(best_tree$edge.length)))
+# best_tree_l$edge.length <- log(best_tree_l$edge.length*(1/min(best_tree_l$edge.length)))
+# 
+# ggtree(best_tree, ladderize = T, size=0.5, continuous = TRUE)+
+#   geom_tiplab(data=best_tree_l, aes(label=label))+
+#   geom_tippoint(aes(color=label), size=3, alpha=.75)+
+#   theme(legend.position = 'bottom')+
+#   ggplot2::xlim(0, 22)+
+#   labs(color='Subfamily')+
+#   scale_colour_brewer(palette = "Set1")+
+#   ggsave('WMCD_ie_phylo.pdf', dpi=300, width = 7, height = 7)
+```
+
+
+
+
+```{r}
+# comb <- combn(1:200, 2)
+# dist_lev <- c()
+# for (i in 1:ncol(comb)) {
+#   # tree1 <- trees[[comb[,i][1]]]
+#   tree1 <- five_nj
+#   is_tip <- tree1$edge[,2] <= length(tree1$tip.label)
+#   tree1_o <- paste(tree1$edge[is_tip, 2] , collapse='')
+#   tree2 <- trees[[comb[,i][2]]]
+#   is_tip <- tree2$edge[,2] <= length(tree2$tip.label)
+#   tree2_0 <- paste(tree2$edge[is_tip, 2], collapse='')
+#   dist_lev <- c(dist_lev, adist(tree1_o, tree2_0))
+# }
+```
+
+
+```{r}
+# ggplot(data_frame(val = dist_lev), aes(val))+ 
+#   geom_bar()
+```
+
+
+## Analysis
+
+```{r}
+complete_nel <- read.csv('nel.csv')
+```
+
+```{r}
+count_nel <- complete_nel %>%
+  distinct(Name_y, Family) %>%
+  group_by(Family) %>%
+  mutate(n_of_lang=n()) %>%
+  distinct(Family, n_of_lang) 
+
+count_glottlog <- read.csv('Languages.csv') %>%
+  select(name, child_language_count) %>%
+  rename(Family = name)
+
+fig1 <- inner_join(count_nel, count_glottlog, by=c("Family")) %>%
+  group_by() %>%
+  mutate(sum_data = sum(n_of_lang), sum_glot = sum(child_language_count)) %>%
+  mutate(perc_data = (n_of_lang/sum_data), perc_real = (child_language_count/sum_glot)) %>%
+  pivot_longer(., cols = c(perc_data,perc_real), names_to = "Var", values_to = "Val") %>%
+  ggplot(aes(y=reorder(Family, Val), x=Val, fill=Var))+
+  geom_bar(stat='identity', position = "dodge")+
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1))+
+  scale_fill_grey(name = "Data", labels = c("NEL", "Glottolog"))+
+  labs(x='Percentage', y='Family')+
+  theme(axis.title.y=element_blank(), legend.position = 'bottom')
+
+fig2 <- inner_join(count_nel, count_glottlog, by=c("Family")) %>%
+  group_by() %>%
+  mutate(sum_data = sum(n_of_lang), sum_glot = sum(child_language_count)) %>%
+  mutate(perc_data = (n_of_lang/sum_data), perc_real = (child_language_count/sum_glot)) %>%
+  mutate(diff = perc_data - perc_real) %>%
+  ggplot(aes(x=diff, y=reorder(Family, diff)))+
+  geom_bar(stat='identity')+
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), limits=c(-0.32, 0.32))+
+  labs(x='Perc. in NEL - Perc. in Glottolog', y='Family')+
+  theme(axis.title.y=element_blank())+
+  geom_text(aes(label=n_of_lang), position=position_dodge(width=0.9), hjust=-0.25)
+
+fig1 + fig2 +
+  plot_annotation(tag_levels = 'A')+
+  ggsave('figs/representativeness.pdf',width = 10, height = 4)
+```
+
+
+
+
+
+
+### Wilcoxon U test
+
+
+```{r}
+results <- read.csv('new_results_updated_plus_fam_i.csv')
+results$Contact <- ifelse(results$Distance > 1000, "no", "yes")
+results$Contact <- as.factor(results$Contact)
+```
+
+
+
+```{r}
+results %>%
+  filter(Family_1 == Family_2) %>%
+  group_by(Family_1) %>%
+  mutate(count=n()) %>%
+  filter(count > 6) %>%
+  ggplot(aes(x=Contact, y=WMCD))+
+  facet_wrap(~Family_1)+
+  geom_jitter(alpha=0.5)+
+  geom_boxplot(outlier.shape = NA, fill=NA, aes(color=Family_1))+
+  theme(legend.position = 'none')
+```
+
+```{r}
+results %>%
+  filter(Family_1 == Family_2) %>%
+  group_by(Family_1) %>%
+  mutate(count=n()) %>%
+  filter(count > 6) %>% 
+  ggplot(aes(x=Distance, y=WMCD))+
+  facet_wrap(~Family_1, scales = 'free_x')+
+  ylim(0, 0.4)+
+  geom_point(alpha=0.5, size=1)+
+  geom_smooth(method='lm')
+```
+
+
+```{r}
+median(results$WMCD)
+```
+
+
+```{r}
+test <- results[results$Distance > 0,] %>% 
+  wilcox_test(WMCD ~ Contact, alternative = "less") %>%
+  add_significance() %>%
+  add_xy_position(x='Contact')
+
+p1 <- results[results$Distance > 0,] %>%
+  ggplot(aes(x=Contact, y=WMCD))+
+  geom_jitter(alpha=0.1)+
+  geom_boxplot(alpha=0, outlier.shape = NA, color='red')+
+  stat_pvalue_manual(test, tip.length = 0)+
+  labs(subtitle = get_test_label(test, detailed=TRUE),
+       x='Contact?')+
+  theme(plot.subtitle=element_text(size=7, 
+                                   hjust=0.5, 
+                                   face="italic",
+                                   color="black"))
+
+results[results$Distance > 0,] %>%
+  wilcox_effsize(WMCD ~ Contact, alternative = "less")
+```
+
+
+
+```{r}
+test <- results[results$Distance > 0,] %>% 
+  wilcox_test(WMCD ~ Same_family, alternative = 'less') %>%
+  add_significance() %>%
+  add_xy_position(x='Same_family')
+
+test
+
+p2 <- results[results$Distance > 0,] %>%
+  ggplot(aes(x=Same_family, y=WMCD))+
+  geom_jitter(alpha=0.1)+
+  geom_boxplot(alpha=0, outlier.shape = NA, color='red')+
+  stat_pvalue_manual(test, tip.length = 0)+
+  labs(subtitle = get_test_label(test, detailed=TRUE),
+       x='Same family?')+
+  theme(plot.subtitle=element_text(size=7, 
+                                   hjust=0.5, 
+                                   face="italic",
+                                   color="black"))
+
+results[results$Distance > 0,] %>%
+  wilcox_effsize(WMCD ~ Same_family)
+```
+
+```{r}
+1663138/5460**2
+```
+
+
+```{r}
+test <- results[results$Distance > 0,] %>% 
+  wilcox_test(WMCD ~ Same_genus) %>%
+  add_significance() %>%
+  add_xy_position(x='Same_genus')
+
+p3 <- results[results$Distance > 0,] %>%
+  ggplot(aes(x=Same_genus, y=WMCD))+
+  geom_jitter(alpha=0.1)+
+  geom_boxplot(alpha=0, outlier.shape = NA, color='red')+
+  stat_pvalue_manual(test, tip.length = 0)+
+  labs(subtitle = get_test_label(test, detailed=TRUE),
+       x='Same subfamily?')+
+  theme(plot.subtitle=element_text(size=7, 
+                                   hjust=0.5, 
+                                   face="italic",
+                                   color="black"))
+
+results[results$Distance > 0,] %>%
+  wilcox_effsize(WMCD ~ Same_genus)
+```
+
+```{r}
+p1 + p2 + p3+
+  plot_annotation(tag_levels = 'A')+
+  ggsave('ne_wilcoxon.pdf',width = 10, height = 4)
+```
+
+
+```{r}
+results[results$Distance > 0,] %>%
+  count(Same_family, Contact) %>%
+  ggplot(aes(x=Same_family, y=Contact))+
+  geom_point(aes(size=n), alpha=0.5)+
+  geom_text_repel(aes(label=n), color='blue')+
+  theme(legend.position = 'none')
+```
+
+```{r}
+results[results$Distance > 0,] %>%
+  count(Contact, Same_genus) %>%
+  ggplot(aes(x=Contact, y=Same_genus))+
+  geom_point(aes(size=n), alpha=0.5)+
+  geom_text_repel(aes(label=n), color='blue')+
+  theme(legend.position = 'none')
+```
+
+### Linear regression analysis
+
+```{r}
+complete_lmer <- lmer(scale(WMCD) ~ scale(Distance) + (1|Same_family) + Contact + (1|Same_genus) + scale(Population_difference), data=results[results$Distance > 0 & !is.na(results$Population_difference) & !is.infinite(results$Population_difference),])
+summary(complete_lmer)
+```
+
+```{r}
+plot_model(complete_lmer, vline.color = "black", sort.est = TRUE, show.values = TRUE, value.offset = .3)
+```
+
+
+
+```{r}
+complete <- lm(scale(WMCD) ~ scale(Distance) + Same_family + Contact + Same_genus + scale(Population_difference), data=results[results$Distance > 0 & !is.na(results$Population_difference) & !is.infinite(results$Population_difference),])
+summary(complete)
+```
+
+
+
+```{r}
+no_contact <- lm(scale(WMCD) ~ scale(Distance) + Same_family + Same_genus + scale(Population_difference), data=results[results$Distance > 0 & !is.na(results$Population_difference) & !is.infinite(results$Population_difference),])
+summary(no_contact)
+```
+
+```{r}
+anova(complete, no_contact)
+```
+
+
+```{r}
+xtable(anova(complete, no_contact))
+```
+
+
+```{r}
+plot_model(complete, vline.color = "black", sort.est = TRUE, show.values = TRUE, value.offset = .3)
+```
+
+
+```{r}
+plot_model(no_contact, vline.color = "black", sort.est = TRUE, show.values = TRUE, value.offset = .3)
+```
+
+
+
+### Linear regression analysis (Inverse WMCD)
+
+```{r}
+complete <- lm(scale(WMCD_i) ~ scale(Distance) + Same_family + Contact + Same_genus + scale(Population_difference), data=results[results$Distance > 0 & !is.na(results$Population_difference) & !is.infinite(results$Population_difference),])
+summary(complete)
+```
+
+
+
+```{r}
+no_contact <- lm(scale(WMCD_i) ~ scale(Distance) + Same_family + Same_genus + scale(Population_difference), data=results[results$Distance > 0 & !is.na(results$Population_difference) & !is.infinite(results$Population_difference),])
+summary(no_contact)
+```
+
+```{r}
+anova(complete, no_contact)
+```
+
+
+```{r}
+xtable(anova(complete, no_contact))
+```
+
+
+```{r}
+plot_model(complete, vline.color = "black", sort.est = TRUE, show.values = TRUE, value.offset = .3)
+```
+
+
+```{r}
+plot_model(no_contact, vline.color = "black", sort.est = TRUE, show.values = TRUE, value.offset = .3)
+```
+
+
+### NPM
+
+```{r}
+res <- read.csv('NPM_diff_model_res.csv')
+
+best_models <- res %>%
+  group_by(Model, N.of.colex) %>%
+  summarise(mean=median(Recall)) %>%
+  group_by(N.of.colex) %>%
+  top_n(n=1)
+```
+
+```{r}
+inner_join(res, best_models, by=c("Model", "N.of.colex")) %>%
+  ggplot(aes(x=factor(N.of.colex), y=Recall))+
+  geom_jitter(aes(color=Model))+
+  geom_boxplot(fill = NA, outlier.shape = NA)+
+  theme(legend.position = 'bottom')+
+   geom_hline(yintercept=0.5, linetype="dashed", 
+                color = "violet", size=1)+
+  labs(x='Top n of colexifications')+
+  scale_colour_brewer(palette = "Set1")+
+  ggsave('NPM_best_model.pdf', dpi=300, width = 10, height = 4)
+```
+
+```{r}
+# read.csv('sim_res_gbr_NPM.csv') %>%
+#   ggplot(aes(x=reorder(Variable, Importance, FUN = median), y=Importance))+
+#   facet_grid('Set')+
+#   geom_jitter(size=1, alpha=0.1)+
+#   geom_boxplot(outlier.shape = NA, fill=NA, aes(color=Variable))+
+#   theme_bw()+
+#   xlab('Feature')+
+#   coord_flip()+
+#   scale_colour_brewer(palette = "Set1")+
+#   theme(legend.position = "none")
+```
+
+
+```{r}
+# family_results <- read.csv('percent_correct_NPM_family.csv')
+# 
+# ggplot(data=family_results, aes(x=Correct, y=reorder(Family, Correct, FUN = median)))+
+#   geom_boxplot(outlier.shape = NA, aes(fill=reorder(Family, Correct, FUN = median)), alpha=1)+
+#   geom_jitter(size=0.5, alpha=0.5)+
+#   theme_bw()+
+#   theme(legend.position = "none")+
+#   labs(y = 'Family', x = 'Percentage of correctly identified presence')
+```
+
+```{r}
+read.csv('NPM_datasets/NPM_distribution_100.csv') %>%
+  group_by(Language) %>%
+  summarise(mean_npm = mean(NPM), presence=mean(Present), family=Family)  %>%
+  ggplot(aes(x=mean_npm, y=presence, color=family))+
+  # geom_text_repel(aes(label=Language))+
+  geom_point()
+```
+
+```{r}
+read.csv('NPM_datasets/NPM_distribution_100.csv') %>%
+  mutate(Present=replace(Present, Present==1, 'Yes')) %>%
+  mutate(Present=replace(Present, Present==0, 'No')) %>%
+  ggplot(aes(x=NPM, fill=Present))+
+  geom_density(alpha=0.5, color=alpha('white', 0))+
+  facet_wrap(~Family, scales = 'free_y')+
+  scale_color_grey()+
+  theme_classic()+
+  ggsave('NPM_desnity_across_families.pdf', dpi=300, width = 10, height = 10)
+```
+
+
+```{r}
+# read.csv('sim_res_gbr_10_r.csv') %>%
+#   ggplot(aes(x=reorder(Variable, Importance, FUN = median), y=Importance))+
+#   geom_jitter(size=1, alpha=0.1)+
+#   geom_boxplot(outlier.shape = NA, fill=NA, aes(color=Variable))+
+#   theme_bw()+
+#   xlab('Feature')+
+#   coord_flip()+
+#   theme(legend.position = "none")+
+#   ggsave('NPM_best_model.pdf', dpi=300, width = 10, height = 4)
+```
+
+
+
+Average NPM vs. degree:
+
+```{r}
+res <- degree(g_t_u)
+res_d <- data.frame(res)
+res_d$lang <- rownames(res_d)
+res_d$Family <- as.character(V(g_t_u)$family)
+
+deg_fam <- res_d %>%
+  group_by(Family)  %>%
+  summarize(mean_degree = mean(res))
+
+npm_fam <- read.csv('NPM_datasets/NPM_distribution_100.csv') %>%
+  group_by(Family) %>%
+  summarize(avg_npm = mean(NPM))
+
+joined <- inner_join(deg_fam, npm_fam, by=c("Family"))
+
+joined %>%
+  ggplot(aes(x=as.numeric(mean_degree), y=avg_npm))+
+  geom_smooth(method='lm')+
+  geom_point()+
+  geom_text_repel(aes(label=Family))+
+  scale_x_continuous(breaks = round(seq(1, 16, by = 2),1))+
+  labs(x='Average degree', y='Average NPM')+
+  theme(legend.position = 'none')+
+  ggsave('degree_npm.pdf', dpi=300, width = 10, height = 4)
+
+
+cor.test(joined$mean_degree, joined$avg_npm, method=c("pearson"))
+```
+
+
+
+

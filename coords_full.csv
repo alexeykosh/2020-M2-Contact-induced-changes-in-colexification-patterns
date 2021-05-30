@@ -1,0 +1,106 @@
+,Name_y,Latitude,Longitude,Family,Subfamily,Macroarea
+abk,Abkhaz,43.06,41.16,Abkhaz-Adyge,Abkhaz-Abaza,Eurasia
+ady,Adyghe,44.65,40.0,Abkhaz-Adyge,Circassian,Eurasia
+ain,Hokkaido Ainu,43.63,142.46,Ainu,Hokkaido-Kuril Ainu,Eurasia
+ale,Aleut,52.12,-174.29,Eskimo-Aleut,Aleut,North America
+ava,Avar,41.7,46.56,Nakh-Daghestanian,Daghestanian,Eurasia
+azj,North Azerbaijani,40.4,49.6,Turkic,West Oghuz,Eurasia
+bak,Bashkir,53.6,56.56,Turkic,Kipchak,Eurasia
+bel,Belarusian,53.23,25.6,Indo-European,Balto-Slavic,Eurasia
+ben,Bengali,24.0,90.0,Indo-European,Indo-Aryan,Eurasia
+bre,Breton,48.25,-3.79,Indo-European,Celtic,Eurasia
+bsk,Burushaski,36.22,74.82,Burushaski,Burushaski,Eurasia
+bua,Buryat,51.83,107.6,Mongolic,Eastern Mongolic,Eurasia
+bul,Bulgarian,42.7,23.8,Indo-European,Balto-Slavic,Eurasia
+cat,Catalan,41.45,1.57,Indo-European,Italic,Eurasia
+ces,Czech,49.87,15.1,Indo-European,Balto-Slavic,Eurasia
+che,Chechen,43.5,45.5,Nakh-Daghestanian,Nakh,Eurasia
+chv,Chuvash,55.49,47.16,Turkic,Bolgar,Eurasia
+ckt,Chukchi,68.64,170.04,Chukotko-Kamchatkan,Chukotian,Eurasia
+cmn,Mandarin Chinese,40.02,116.23,Sino-Tibetan,Sinitic,Eurasia
+cym,Welsh,52.0,-4.0,Indo-European,Celtic,Eurasia
+dan,Danish,55.6,12.5,Indo-European,Germanic,Eurasia
+dar,Dargwa,42.43,47.44,Nakh-Daghestanian,Daghestanian,Eurasia
+ddo,Tsez,42.26,45.81,Nakh-Daghestanian,Daghestanian,Eurasia
+deu,German,52.27,10.5,Indo-European,Germanic,Eurasia
+ekk,Estonian,59.25,24.75,Uralic,Finnic,Eurasia
+ell,Modern Greek,38.0,23.75,Indo-European,Graeco-Phrygian,Eurasia
+enf,Forest Enets,69.98,88.21,Uralic,Samoyedic,Eurasia
+eng,English,53.0,-1.0,Indo-European,Germanic,Eurasia
+ess,Central Siberian Yupik,63.43,-170.27,Eskimo-Aleut,Eskimo,Eurasia
+eus,Basque,43.28,-1.32,Basque,Basque,Eurasia
+evn,Evenki,65.75,105.3,Tungusic,Northern Tungusic,Eurasia
+fin,Finnish,61.0,24.45,Uralic,Finnic,Eurasia
+fra,French,48.0,2.0,Indo-European,Italic,Eurasia
+gld,Nanai,48.43,134.8,Tungusic,Central Tungusic,Eurasia
+gle,Irish,53.22,-7.62,Indo-European,Celtic,Eurasia
+heb,Modern Hebrew,31.11,35.02,Afro-Asiatic,Semitic,Eurasia
+hin,Hindi,27.2,78.0,Indo-European,Indo-Aryan,Eurasia
+hrv,Croatian,45.2,16.83,Indo-European,Balto-Slavic,Eurasia
+hun,Hungarian,46.91,19.66,Uralic,Hungarian,Eurasia
+hye,Armenian,40.0,45.0,Indo-European,Armenic,Eurasia
+isl,Icelandic,63.48,-19.02,Indo-European,Germanic,Eurasia
+ita,Italian,43.05,12.65,Indo-European,Italic,Eurasia
+itl,Itelmen,56.78,156.91,Chukotko-Kamchatkan,Itelmen,Eurasia
+jpn,Japanese,35.0,135.0,Japonic,Japanesic,Eurasia
+kal,Kalaallisut,69.38,-52.86,Eskimo-Aleut,Eskimo,Eurasia
+kan,Kannada,13.59,76.12,Dravidian,South Dravidian,Eurasia
+kat,Georgian,41.85,43.79,Kartvelian,Georgian-Zan,Eurasia
+kaz,Kazakh,49.8,73.15,Turkic,Kipchak,Eurasia
+kca,Northern Khanty,62.43,66.12,Uralic,Khantyic,Eurasia
+ket,Ket,63.76,87.55,Yeniseian,Northern Yeniseian,Eurasia
+khk,Khalkha Mongolian,48.32,106.29,Mongolic,Eastern Mongolic,Eurasia
+kmr,Northern Kurdish,37.0,43.0,Indo-European,Iranian,Eurasia
+koi,Komi-Permyak,59.66,54.8,Uralic,Permian,Eurasia
+kor,Korean,37.5,128.0,Koreanic,Korean,Eurasia
+kpv,Komi-Zyrian,64.05,54.95,Uralic,Permian,Eurasia
+krl,North Karelian,65.17,30.87,Uralic,Finnic,Eurasia
+lav,Latvian,56.83,24.31,Indo-European,Balto-Slavic,Eurasia
+lbe,Lak,42.13,47.08,Nakh-Daghestanian,Daghestanian,Eurasia
+lez,Lezgian,41.52,47.9,Nakh-Daghestanian,Daghestanian,Eurasia
+lit,Lithuanian,55.14,23.96,Indo-European,Balto-Slavic,Eurasia
+liv,Livonian,57.57,22.03,Uralic,Finnic,Eurasia
+mal,Malayalam,9.59,76.77,Dravidian,South Dravidian,Eurasia
+mdf,Moksha,54.19,42.67,Uralic,Mordvin,Eurasia
+mhr,Meadow Mari,57.0,49.5,Uralic,Mari,Eurasia
+mnc,Manchu,47.31,126.56,Tungusic,Manchu-Jurchen,Eurasia
+mns,Northern Mansi,64.41,61.34,Uralic,Mansic,Eurasia
+mrj,Hill Mari,56.33,46.33,Uralic,Mari,Eurasia
+myv,Erzya,53.0,45.5,Uralic,Mordvin,Eurasia
+nio,Nganasan,73.14,86.21,Uralic,Samoyedic,Eurasia
+niv,Nivkh,52.59,140.68,Nivkh,Nivkh,Eurasia
+nld,Dutch,52.0,5.0,Indo-European,Germanic,Eurasia
+nor,Norwegian (Bokmål),59.92,10.71,Indo-European,Germanic,Eurasia
+olo,Olonets Karelian,61.0,33.0,Uralic,Finnic,Eurasia
+oss,Ossetian,43.18,44.23,Indo-European,Iranian,Eurasia
+pbu,Northern Pashto,32.1,67.2,Indo-European,Iranian,Eurasia
+pes,Western Farsi,28.66,55.16,Indo-European,Iranian,Eurasia
+pol,Polish,51.84,18.63,Indo-European,Balto-Slavic,Eurasia
+por,Portuguese,39.91,-8.1,Indo-European,Italic,Eurasia
+ron,Romanian,46.39,24.23,Indo-European,Italic,Eurasia
+rus,Russian,57.6,39.8,Indo-European,Balto-Slavic,Eurasia
+sah,Sakha,62.0,130.0,Turkic,North Siberian Turkic,Eurasia
+sel,Northern Selkup,59.94,82.3,Uralic,Samoyedic,Eurasia
+sjd,Kildin Sami,68.22,35.83,Uralic,Saami,Eurasia
+slk,Slovak,48.55,18.78,Indo-European,Balto-Slavic,Eurasia
+slv,Slovene,46.25,14.78,Indo-European,Balto-Slavic,Eurasia
+sma,Southern Sami,64.25,12.6,Uralic,Saami,Eurasia
+sme,Northern Sami,68.72,22.11,Uralic,Saami,Eurasia
+smj,Lule Sami,67.28,17.81,Uralic,Saami,Eurasia
+smn,Inari Sami,69.42,27.87,Uralic,Saami,Eurasia
+sms,Skolt Sami,68.83,29.72,Uralic,Saami,Eurasia
+spa,Spanish,42.25,-3.7,Indo-European,Italic,Eurasia
+sqi,Standard Albanian,41.33,19.85,Indo-European,Albanian,Eurasia
+swe,Swedish,59.8,17.39,Indo-European,Germanic,Eurasia
+tam,Tamil,10.52,78.83,Dravidian,South Dravidian,Eurasia
+tat,Tatar,55.0,50.0,Turkic,Kipchak,Eurasia
+tel,Telugu,16.45,78.7,Dravidian,South Dravidian,Eurasia
+tur,Turkish,39.87,32.87,Turkic,West Oghuz,Eurasia
+udm,Udmurt,56.13,52.64,Uralic,Permian,Eurasia
+ukr,Ukrainian,50.25,28.65,Indo-European,Balto-Slavic,Eurasia
+uzn,Northern Uzbek,39.65,67.0,Turkic,Uzbek,Eurasia
+vep,Veps,60.34,34.79,Uralic,Finnic,Eurasia
+xal,Kalmyk,46.57,45.32,Mongolic,Eastern Mongolic,Eurasia
+ykg,Northern Yukaghir,69.0,155.0,Yukaghir,Northern Yukaghir,Eurasia
+yrk,Tundra Nenets,66.18,71.02,Uralic,Samoyedic,Eurasia
+yux,Southern Yukaghir,65.75,150.83,Yukaghir,Kolymic,Eurasia
